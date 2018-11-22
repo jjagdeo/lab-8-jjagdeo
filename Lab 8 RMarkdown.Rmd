@@ -9,3 +9,147 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+#Today, we are going to be doing linear regression examples.
+
+###First, load the tidyverse and read in the data file:
+
+```{r, message = FALSE}
+
+library(tidyverse)
+
+salmon_import <- read_csv("salmon_imports_simp.csv")
+
+```
+
+If we’re going to use linear regression, we should have reason to think that a linear relationship exists between variables. So go ahead and look at the data (year on x-axis, imports on y-axis).
+
+###Second, graph an exploratory scatterplot
+
+```{r}
+
+salmon_scatter <- ggplot(salmon_import, aes(x = year, y = salmon)) +
+  geom_point()
+
+salmon_scatter
+
+# Overall, does it look like describing the relationship between year and fresh salmon imports using linear regression makes sense? Do you have any concerns about using linear regression to describe the relationship?
+
+# The data displays a roughly linear relationship, but there are unusual dips in the data around 2004 and 2014
+
+```
+
+###Third, perform linear regression on the data
+
+```{r}
+
+# The general syntax for linear regression in R is: model_name <- lm(y_variable ~ x_variable, data = df_name)
+
+# Let's perform linear regression to describe the trend in total volume of fresh salmon imported to the U.S. from 1990 - 2017
+
+salmon_model <- lm(salmon ~ year, data = salmon_import)
+
+salmon_model
+
+# Imports(1000 pounds) = -14982940 + 7550(year)
+
+# In the context of this model, the slope means that for every year, there is an increase of 7,550 fresh salmon imports into the US.
+
+# In the context of this model, the y intercept being negative means that we can't use this model to extrapolate values because we will end up with negative fresh salmon imports.
+
+```
+
+### Fourth, view model diagnostics using "plot"
+
+```{r}
+
+par(mfrow = c(2,2))
+
+plot(salmon_model)
+
+# The qq-plot is pretty linear, indicating a normal distribution of residuals.
+
+# The residuals may violate the assumption of homoscedasticity, as they start out small, but grow larger. In addition, there are some large values = possible outliers.
+
+# There is 1 value outside the Cook's distance red line, so it may be an outlier.
+
+```
+
+### Fifth, explore model fit and significance
+
+```{r}
+
+summary(salmon_model)
+
+# Coefficient of determination R^2: 0.9478. Year significantly predicts salmon imports, according to this model. 
+
+# 95% of variance in salmon imports to the US is explained by the year.
+
+# 5% of the variance in salmon imports to the US is NOT explained by the year.
+
+```
+
+### Sixth, create a final graph of the linear regression model with the original data, model and 95% confidence interval for predictions.
+
+```{r}
+
+salmon_final_graph <- ggplot(salmon_import, aes(x = year, y = salmon)) +
+geom_point() +
+geom_smooth(method = lm, se = TRUE, size = 0.5, color = "gray20") +
+theme_bw() +
+scale_x_continuous(expand = c(0,0), limits = c(1990, 2017)) +
+labs(x = "Year", y = "U.S. Annual Fresh Salmon Imports\n(1,000 pounds)")
+
+salmon_final_graph
+
+# The gray band in the 95% confidence interval for salmon_model linear regression
+
+
+```
+
+### Seventh, make predictions using the model
+
+```{r}
+
+# Let’s say we want to use our model to make predictions for U.S. fresh salmon imports in years 2022, 2024, 2026 and 2028:
+
+
+# Create a data frame containing the ‘new values’ that you want to make predictions for
+
+new_years <- data.frame(year = c(2022, 2024, 2026, 2028))
+
+
+# Feed that into the predict() function
+
+future_predict <- predict(salmon_model, newdata = new_years, interval = "confidence")
+
+future_predict
+
+# Prediction outcomes displayed in the "fit" column 
+
+
+# Bind the prediction outcomes with the ‘new_years’ data to actually create a useful table of predicted imports and upper and lower CI:
+
+predictions <- data.frame(new_years, future_predict)
+
+predictions
+
+
+```
+
+###Eight, find Pearson's r (correlation)
+
+```{r}
+
+# Use the cor.test() function to find Pearson’s r for the linear relationship described between year and salmon imports.
+
+pearson_r_salmon <- cor.test(salmon_import$year, salmon_import$salmon)
+
+pearson_r_salmon
+
+# The correlation between year and salmon is 0.97, which a strong positive correlation.
+
+```
+
+###Lastly, write a final 1 - 2 sentence statement describing the results of your linear regression and Pearson’s r findings.
+
+Year significantly predicts fresh salmon imports to the US (b = 7550, t(26) = 21.7, p < 0.001) with a strong positive correlation between the two (Pearson’s r = 0.97). The overall model (Imports(1000 pounds) = -14982940 + 7550(year) explains a significant amount of variance in salmon imports.
